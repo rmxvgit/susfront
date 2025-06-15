@@ -1,5 +1,64 @@
 "use client";
+import { Formik, Form, Field } from "formik";
+import { mock_login_request } from "@/lib/requests";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { setTimeout } from "node:timers";
 
 export default function LoginPage() {
-  return <>LoginPage</>;
+  const router = useRouter();
+  const [formErr, setFormErr] = useState<string>("");
+
+  function form_submit(values: LoginData) {
+    mock_login_request(values)
+      .then(() => {
+        router.push("/dashboard");
+      })
+      .catch((err) => {
+        if (err instanceof Error) {
+          if (err.message === "401") {
+            setFormErr("credenciais inválidas");
+          }
+
+          setFormErr("erro ao fazer login: " + err.message);
+        }
+
+        setTimeout(() => {
+          setFormErr("");
+        }, 1500);
+      });
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col justify-center">
+      <Formik onSubmit={form_submit} initialValues={{ email: "", senha: "" }}>
+        <Form className="min-w-60 w-1/2 flex flex-col border border-blue-400 p-6 self-center rounded-2xl gap-6">
+          <label id="login" className="text-lg font-bold">
+            Login:
+          </label>
+          <Field
+            name="email"
+            type="text"
+            placeholder="nome"
+            required
+            className="bg-gray-300 rounded h-10 border border-blue-400 p-2"
+          />
+          <Field
+            name="senha"
+            type="password"
+            placeholder="senha"
+            required
+            className="bg-gray-300 rounded h-10 border border-blue-400 p-2"
+          />
+          <p className="text-sm text-red-500">{formErr}</p>
+          <button className="bg-blue-300 w-fit p-2 rounded">Enviar</button>
+        </Form>
+      </Formik>
+    </div>
+  );
+}
+
+interface LoginData {
+  email: string;
+  senha: string;
 }
