@@ -1,6 +1,6 @@
 "use client";
 import { Formik, Form, Field } from "formik";
-import { mock_login_request } from "@/lib/requests";
+import { login_request } from "@/lib/requests";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setTimeout } from "node:timers";
@@ -10,7 +10,7 @@ export default function LoginPage() {
   const [formErr, setFormErr] = useState<string>("");
 
   function form_submit(values: LoginData) {
-    mock_login_request(values)
+    login_request(values)
       .then(() => {
         router.push("/dashboard");
       })
