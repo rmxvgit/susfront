@@ -73,7 +73,18 @@ export async function get_hospitals_request() {
   return data;
 }
 
-export async function get_single_hospital(cnes: string) {}
+export async function get_single_hospital(cnes: string) {
+  const result = await axios.get(get_back_url(`/hospital/${cnes}`), {
+    headers: { Authorization: bearer_token() },
+  });
+
+  if (result.status != HttpStatusCode.Ok) {
+    throw new Error(`${result.status}`);
+  }
+
+  const data: HP_info = result.data;
+  return data;
+}
 
 // informações referêntes a um laudo
 export interface LD_info {
@@ -85,4 +96,15 @@ export interface LD_info {
   estado: string;
 }
 
-export async function get_laudos(cnes: string) {}
+export async function get_laudos(cnes: string) {
+  const result = await axios.get(get_back_url(`/laudo/hospital${cnes}`), {
+    headers: { Authorization: bearer_token() },
+  });
+
+  if (result.status != HttpStatusCode.Ok) {
+    throw new Error(`${result.status}`);
+  }
+
+  const data: LD_info[] = result.data;
+  return data;
+}
