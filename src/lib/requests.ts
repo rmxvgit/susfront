@@ -1,5 +1,6 @@
 "use client";
 import axios, { HttpStatusCode } from "axios";
+import { validate_date } from "./utils";
 
 const backendURL = "https://backsus-production.up.railway.app";
 
@@ -36,6 +37,7 @@ export async function login_request(values: { email: string; senha: string }) {
     typeof result.data == "string"
   ) {
     localStorage.setItem("token", result.data);
+    localStorage.setItem("admin", "true");
     return;
   }
 
@@ -107,4 +109,56 @@ export async function get_laudos(cnes: string) {
 
   const data: LD_info[] = result.data;
   return data;
+}
+
+export interface MK_LD_info {
+  cnes: string;
+  nome_fantasia: string;
+  data_inicio: string;
+  data_fim: string;
+  cidade: string;
+  numero_processo: string;
+  data_distribuicao: string;
+  data_citacao: string;
+  data_fim_correcao: string;
+  razao_social: string;
+  cnpj: string;
+  ivr_tunep: string;
+}
+
+export async function mock_make_laudo_request(info: MK_LD_info) {
+  if (info.cidade == "a") {
+    throw new Error("cidade errada");
+  }
+
+  return Promise<null>;
+}
+
+export async function make_laudo_request(info: MK_LD_info) {
+  const data_inicio = validate_date(info.data_inicio);
+  const data_fim = validate_date(info.data_fim);
+
+  info.data_inicio = `${data_inicio?.m}-${data_inicio?.y}`;
+  info.data_fim = `${data_fim?.m}-${data_fim?.y}`;
+  info.data_citacao.replace("/", "-");
+  info.data_fim_correcao.replace("/", "-");
+  info.data_distribuicao.replace("/", "-");
+
+  const result = await axios.post(get_back_url("/laudo/make"), info, {
+    headers: { Authorization: bearer_token() },
+  });
+
+  if (result.status != HttpStatusCode.Created) {
+    throw new Error(`${result.status}`);
+  }
+
+  return Promise<null>;
+}
+
+export interface USR_info {
+  nome: string;
+}
+
+export async function mock_list_all_users(): Promise<USR_info[]> {
+  return Promise.resolve([{ nome: "John Doe" }, { nome: "Jane Doe" }]);
 }
