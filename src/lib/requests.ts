@@ -2,9 +2,9 @@
 import axios, { HttpStatusCode } from "axios";
 import { validate_date } from "./utils";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const local_backend = "http://localhost:3005";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const remote_backend = "https://backsus-production.up.railway.app";
 
 const backendURL = remote_backend;
