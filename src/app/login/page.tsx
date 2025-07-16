@@ -4,6 +4,7 @@ import { login_request } from "@/lib/requests";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setTimeout } from "node:timers";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,7 +34,15 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col justify-center">
       <Formik onSubmit={form_submit} initialValues={{ email: "", senha: "" }}>
         <Form className="min-w-60 w-1/2 flex flex-col border border-blue-400 p-6 self-center rounded-2xl gap-6">
-          <label id="login" className="text-lg font-bold">
+          <div className="bg-blue-500 p-2 rounded-lg">
+            <Image
+              src={"/logo.svg"}
+              alt="logo advogasus"
+              height={69}
+              width={291}
+            ></Image>
+          </div>
+          <label id="login" className="text-2xl font-bold">
             Login:
           </label>
           <Field

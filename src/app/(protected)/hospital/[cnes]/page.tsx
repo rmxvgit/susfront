@@ -2,20 +2,24 @@
 
 import {
   get_laudos,
+  delete_laudo_request,
   get_single_hospital,
   HP_info,
   LD_info,
   make_laudo_request,
   MK_LD_info,
-  mock_csv_download_url,
   pdf_download_url,
+  sp_csv_download_url,
+  pa_csv_download_url,
+  remove_hospital_request,
 } from "@/lib/requests";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import Image from "next/image";
 import { Modal } from "@/ui/modal";
 import { Formik, Form, Field } from "formik";
 import { validate_date } from "@/lib/utils";
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
 export default function HospitalPage({
   params,
@@ -70,6 +74,20 @@ export default function HospitalPage({
       .catch(() => {
         set_err("Erro ao criar laudo");
       });
+  }
+
+  function remove_hospital() {
+    remove_hospital_request(hp_data.cnes)
+      .then(() => {
+        set_loading(false);
+        router.push("/dashboard");
+      })
+      .catch(() => {
+        set_loading(false);
+        set_err("Erro ao remover hospital");
+      });
+
+    set_loading(true);
   }
 
   useEffect(() => {
@@ -305,7 +323,10 @@ export default function HospitalPage({
             <p className="text-2xl">{hp_data.estado}</p>
           </div>
         </div>
-        <button className="w-fit bg-red-500 p-1 rounded-lg font-bold mb-8">
+        <button
+          className="w-fit bg-red-500 p-1 rounded-lg font-bold mb-8 hover:bg-red-300"
+          onClick={remove_hospital}
+        >
           remover hospital
         </button>
         <div className="border" />
@@ -316,14 +337,28 @@ export default function HospitalPage({
           >
             +
           </button>
-          {laudos_data.map(make_laudo_card)}
+          {laudos_data.map((laudo) => make_laudo_card(laudo, router, set_err))}
         </div>
       </div>
     </div>
   );
 }
 
-function make_laudo_card(laudo: LD_info) {
+function make_laudo_card(
+  laudo: LD_info,
+  router: AppRouterInstance,
+  set_err: Dispatch<SetStateAction<string | null>>,
+) {
+  function delete_laudo(id: number) {
+    delete_laudo_request(id)
+      .then(() => {
+        router.refresh();
+      })
+      .catch(() => {
+        set_err("Erro ao deletar laudo");
+      });
+  }
+
   return (
     <div
       key={laudo.id}
@@ -349,18 +384,29 @@ function make_laudo_card(laudo: LD_info) {
         <div className="flex gap-2">
           <a
             href={pdf_download_url(laudo.id)}
-            className="bg-red-700 text-white p-1 rounded-lg font-bold"
+            className="bg-red-700 text-white p-1 rounded-lg font-bold hover:bg-red-500"
           >
             PDF
           </a>
           <a
-            href={mock_csv_download_url(laudo.id)}
-            className="bg-green-500 text-white p-1 rounded-lg font-bold"
+            href={pa_csv_download_url(laudo.id)}
+            className="bg-green-500 text-white p-1 rounded-lg font-bold hover:bg-green-600"
           >
-            CSV
+            CSV PA
+          </a>
+          <a
+            href={sp_csv_download_url(laudo.id)}
+            className="bg-green-500 text-white p-1 rounded-lg font-bold hover:bg-green-600"
+          >
+            CSV SP
           </a>
         </div>
-        <button className="w-fit p-1 rounded-lg aspect-square text-center">
+        <button
+          className="w-fit p-1 rounded-lg aspect-square text-center hover:bg-gray-400"
+          onClick={() => {
+            delete_laudo(laudo.id);
+          }}
+        >
           ❌
         </button>
       </div>

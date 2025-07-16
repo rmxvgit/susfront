@@ -2,7 +2,12 @@
 import axios, { HttpStatusCode } from "axios";
 import { validate_date } from "./utils";
 
-const backendURL = "https://backsus-production.up.railway.app";
+const local_backend = "http://localhost:3005";
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const remote_backend = "https://backsus-production.up.railway.app";
+
+const backendURL = local_backend;
 
 // USAR BARRA NO INÍCIO DA STRING
 function get_back_url(page_relative_path: string): string {
@@ -13,12 +18,12 @@ export function pdf_download_url(id: string | number): string {
   return get_back_url(`/laudo/dowload${id}`);
 }
 
-export function csv_download_url(id: string | number): string {
-  return get_back_url(`/laudo/getcsv${id}`);
+export function pa_csv_download_url(id: string | number): string {
+  return get_back_url(`/laudo/download-csv-pa${id}`);
 }
 
-export function mock_csv_download_url(id: string | number): string {
-  return pdf_download_url(id);
+export function sp_csv_download_url(id: string | number): string {
+  return get_back_url(`/laudo/download-csv-sp${id}`);
 }
 
 function bearer_token(): string {
@@ -32,12 +37,15 @@ function bearer_token(): string {
 
 export async function login_request(values: { email: string; senha: string }) {
   const result = await axios.post(get_back_url("/auth/login"), values);
+  console.log(result.data);
+
   if (
     result.status === HttpStatusCode.Created &&
-    typeof result.data == "string"
+    "user" in result.data &&
+    "admin" in result.data
   ) {
-    localStorage.setItem("token", result.data);
-    localStorage.setItem("admin", "true");
+    localStorage.setItem("token", result.data.user);
+    localStorage.setItem("admin", result.data.admin ? "true" : "false");
     return;
   }
 
@@ -156,9 +164,64 @@ export async function make_laudo_request(info: MK_LD_info) {
 }
 
 export interface USR_info {
-  nome: string;
+  email: string;
+  senha: string;
+  admin: boolean;
 }
 
 export async function mock_list_all_users(): Promise<USR_info[]> {
-  return Promise.resolve([{ nome: "John Doe" }, { nome: "Jane Doe" }]);
+  return Promise.resolve([
+    { email: "John Doe", senha: "b", admin: true },
+    { email: "Jane Doe", senha: "a", admin: false },
+  ]);
 }
+
+export async function list_all_users_request(): Promise<USR_info[]> {
+  const result = await axios.get(get_back_url("/auth/usuarios"), {
+    headers: { Authorization: bearer_token() },
+  });
+
+  const data: USR_info[] = result.data;
+  return data;
+}
+
+export async function delete_laudo_request(id: number) {
+  await axios.delete(get_back_url(`/laudo/${id}`), {
+    headers: { Authorization: bearer_token() },
+  });
+  return Promise<null>;
+}
+
+export async function remove_hospital_request(cnes: string) {
+  await axios.delete(get_back_url(`/hospital/${cnes}`), {
+    headers: { Authorization: bearer_token() },
+  });
+  return Promise<null>;
+}
+
+// TODO: escrever as funções abaixo
+export async function mock_reset_server_request() {}
+
+export async function remove_user_request(email: string) {
+  await axios.delete(get_back_url(`/auth/usuarios${email}`), {
+    headers: { Authorization: bearer_token() },
+  });
+  return Promise<null>;
+}
+
+export async function add_user_request(info: USR_info) {
+  await axios.post(get_back_url(`/auth/usuarios`), info, {
+    headers: { Authorization: bearer_token() },
+  });
+  return Promise<null>;
+}
+
+export async function give_admin_request(email: string, admin: boolean) {
+  await axios.post(
+    get_back_url(`/auth/giveadmin${email}`),
+    { admin: admin },
+    { headers: { Authorization: bearer_token() } },
+  );
+  return Promise<null>;
+}
+export async function reset_server_request() {}
