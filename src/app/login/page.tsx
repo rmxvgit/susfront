@@ -3,7 +3,6 @@ import { Formik, Form, Field } from "formik";
 import { login_request } from "@/lib/requests";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { setTimeout } from "node:timers";
 import Image from "next/image";
 
 export default function LoginPage() {
