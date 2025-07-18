@@ -224,4 +224,16 @@ export async function give_admin_request(email: string, admin: boolean) {
   );
   return Promise<null>;
 }
+
 export async function reset_server_request() {}
+
+export async function add_hospital_request(data: {
+  name: string;
+  cnes: string;
+  estado: string;
+}) {
+  await axios.post(get_back_url(`/hospital`), data, {
+    headers: { Authorization: bearer_token() },
+  });
+  return Promise<null>;
+}

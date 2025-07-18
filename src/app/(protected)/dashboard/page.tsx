@@ -2,12 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { get_hospitals_request, HP_info } from "@/lib/requests";
+import {
+  add_hospital_request,
+  get_hospitals_request,
+  HP_info,
+} from "@/lib/requests";
 import { is_token_expired } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field } from "formik";
 import { Modal } from "@/ui/modal";
 import Image from "next/image";
+import { AxiosError } from "axios";
 
 export default function Dashboard() {
   const [hp_data, set_hp_data] = useState<HP_info[]>([]);
@@ -17,7 +22,38 @@ export default function Dashboard() {
   const [admin, set_admin] = useState<boolean>(false);
   const router = useRouter();
 
-  function submit_new_hospital_form() {}
+  function submit_new_hospital_form(data: {
+    name: string;
+    cnes: string;
+    estado: string;
+  }) {
+    if (!validate_hospital_data(data)) {
+      return;
+    }
+    console.log(data);
+    add_hospital_request(data)
+      .then(() => {
+        set_modal(false);
+        get_hospitals_request()
+          .then((data) => {
+            set_hp_data(data);
+            set_loading(false);
+            set_err(null);
+          })
+          .catch((err) => {
+            if (err instanceof Error) {
+              set_err(
+                `Erro ao carregar os dados dos hospitais: ${err.message}.`,
+              );
+              set_loading(false);
+            }
+          });
+        router.refresh();
+      })
+      .catch((err: AxiosError) => {
+        set_err("erro ao criar hospital " + err.status);
+      });
+  }
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -79,7 +115,7 @@ export default function Dashboard() {
       <Modal state={modal}>
         <Formik
           onSubmit={submit_new_hospital_form}
-          initialValues={{ name: "", cnes: "", estado: "" }}
+          initialValues={{ name: "", cnes: "", estado: "AC" }}
         >
           <Form className="self-center w-1/2 min-w-80 bg-white flex flex-col p-4 gap-3 rounded-lg">
             <h2 className="text-3xl font-bold">Novo Hospital:</h2>
@@ -97,10 +133,39 @@ export default function Dashboard() {
             />
             <label htmlFor="estado">Estado:</label>
             <Field
+              component="select"
               name="estado"
               className="bg-gray-300 border h-10 rounded-lg p-2 mb-4"
               required
-            />
+            >
+              <option value="AC">AC</option>
+              <option value="AL">AL</option>
+              <option value="AP">AP</option>
+              <option value="AM">AM</option>
+              <option value="BA">BA</option>
+              <option value="CE">CE</option>
+              <option value="DF">DF</option>
+              <option value="ES">ES</option>
+              <option value="GO">GO</option>
+              <option value="MA">MA</option>
+              <option value="MT">MT</option>
+              <option value="MS">MS</option>
+              <option value="MG">MG</option>
+              <option value="PA">PA</option>
+              <option value="PB">PB</option>
+              <option value="PR">PR</option>
+              <option value="PE">PE</option>
+              <option value="PI">PI</option>
+              <option value="RJ">RJ</option>
+              <option value="RN">RN</option>
+              <option value="RS">RS</option>
+              <option value="RO">RO</option>
+              <option value="RR">RR</option>
+              <option value="SC">SC</option>
+              <option value="SP">SP</option>
+              <option value="SE">SE</option>
+              <option value="TO">TO</option>
+            </Field>
             <div className="flex justify-between">
               <button
                 type="submit"
@@ -170,4 +235,18 @@ function make_hospital_card(info: HP_info) {
       <p className="overflow-ellipsis">estado: {info.estado}</p>
     </Link>
   );
+}
+
+function validate_hospital_data(data: {
+  name: string;
+  cnes: string;
+  estado: string;
+}): boolean {
+  if (data.cnes.length != 7) {
+    return false;
+  }
+  if (!data.estado || !data.cnes || !data.name) {
+    return false;
+  }
+  return true;
 }
