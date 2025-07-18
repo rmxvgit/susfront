@@ -203,7 +203,7 @@ export async function remove_hospital_request(cnes: string) {
 export async function mock_reset_server_request() {}
 
 export async function remove_user_request(email: string) {
-  await axios.delete(get_back_url(`/auth/usuarios${email}`), {
+  await axios.delete(get_back_url(`/auth/usuarios/email/${email}`), {
     headers: { Authorization: bearer_token() },
   });
   return Promise<null>;

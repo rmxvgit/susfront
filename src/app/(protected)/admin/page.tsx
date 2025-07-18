@@ -37,6 +37,10 @@ export default function AdminPage() {
   }
 
   function add_user(values: { email: string; senha: string }) {
+    if (!values.email || !values.senha) {
+      set_err("valores inseridos são inválidos.");
+      return;
+    }
     const req_vals = { admin: false, ...values };
     add_user_request(req_vals)
       .then(() => {
@@ -176,7 +180,7 @@ export default function AdminPage() {
                 className="rounded-lg p-1 bg-gray-300 w-64"
               />
               <Field
-                type="senha"
+                type="password"
                 name="senha"
                 placeholder="Senha"
                 className="rounded-lg p-1 bg-gray-300 w-64"
