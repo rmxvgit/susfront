@@ -20,6 +20,7 @@ import { Modal } from "@/ui/modal";
 import { Formik, Form, Field } from "formik";
 import { validate_date } from "@/lib/utils";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { AxiosError } from "axios";
 
 export default function HospitalPage({
   params,
@@ -71,8 +72,24 @@ export default function HospitalPage({
         set_modal(false);
         router.refresh();
       })
+      .catch((err: AxiosError) => {
+        console.log(err, "\n");
+        const response = err.response;
+
+        if (
+          response &&
+          response.data &&
+          typeof response.data == "object" &&
+          "message" in response.data
+        ) {
+          set_err(`Erro ao criar laudo: ${response.data.message}`);
+          return;
+        }
+
+        set_err(`Erro ao criar laudo:`);
+      })
       .catch(() => {
-        set_err("Erro ao criar laudo");
+        set_err(`Erro ao criar laudo:`);
       });
   }
 
