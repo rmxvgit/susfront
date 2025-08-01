@@ -4,18 +4,34 @@ import { validate_date } from "./utils";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const local_backend = "http://localhost:3005";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const local_csv_backend = "http://localhost:3003";
 
 const remote_backend = "https://backsus-production.up.railway.app";
+const remote_csv_backend = "https://csvsus-production.up.railway.app";
 
 const backendURL = remote_backend;
+const csvBackendURL = remote_csv_backend;
 
 // USAR BARRA NO INÍCIO DA STRING
 function get_back_url(page_relative_path: string): string {
   return `${backendURL}${page_relative_path}`;
 }
 
+function get_csv_back(page_relative_path: string) {
+  return `${csvBackendURL}${page_relative_path}`;
+}
+
 export function pdf_download_url(id: string | number): string {
   return get_back_url(`/laudo/dowload${id}`);
+}
+
+export function full_SIA_download_url(id: string | number): string {
+  return get_csv_back(`/SIA${id}`);
+}
+
+export function full_SIH_download_url(id: string | number): string {
+  return get_csv_back(`/SIH${id}`);
 }
 
 export function pa_csv_download_url(id: string | number): string {
@@ -83,6 +99,20 @@ export async function get_hospitals_request() {
   return data;
 }
 
+export async function get_all_csvs_request() {
+  const result = await axios.get(get_csv_back("/csvs"));
+
+  const data: CSV_info[] = result.data;
+
+  return data;
+}
+
+export async function get_all_hospital_csvs(cnes: string) {
+  const result = await axios.get(get_csv_back(`/csvs_by_cnes${cnes}`));
+  const data: CSV_info[] = result.data;
+  return data;
+}
+
 export async function get_single_hospital(cnes: string) {
   const result = await axios.get(get_back_url(`/hospital/${cnes}`), {
     headers: { Authorization: bearer_token() },
@@ -117,6 +147,22 @@ export async function get_laudos(cnes: string) {
 
   const data: LD_info[] = result.data;
   return data;
+}
+
+export interface CSV_info {
+  id: number;
+  cnes: string;
+  estado: string;
+  start: string;
+  end: string;
+  is_running: boolean;
+}
+
+export interface MK_CSV_info {
+  cnes: string;
+  estado: string;
+  start: string;
+  end: string;
 }
 
 export interface MK_LD_info {
@@ -163,6 +209,11 @@ export async function make_laudo_request(info: MK_LD_info) {
   return Promise<null>;
 }
 
+export async function make_csv_request(info: MK_CSV_info) {
+  const result = await axios.post(get_csv_back("/make_csv"), info);
+  return result;
+}
+
 export interface USR_info {
   email: string;
   senha: string;
@@ -190,6 +241,11 @@ export async function delete_laudo_request(id: number) {
     headers: { Authorization: bearer_token() },
   });
   return Promise<null>;
+}
+
+export async function delete_csv_request(id: number) {
+  const result = await axios.delete(get_csv_back(`/csv${id}`));
+  return result;
 }
 
 export async function remove_hospital_request(cnes: string) {

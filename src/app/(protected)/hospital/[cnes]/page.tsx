@@ -3,15 +3,22 @@
 import {
   get_laudos,
   delete_laudo_request,
+  delete_csv_request,
   get_single_hospital,
   HP_info,
   LD_info,
+  CSV_info,
   make_laudo_request,
   MK_LD_info,
+  MK_CSV_info,
   pdf_download_url,
   sp_csv_download_url,
   pa_csv_download_url,
+  get_all_hospital_csvs,
   remove_hospital_request,
+  full_SIA_download_url,
+  full_SIH_download_url,
+  make_csv_request,
 } from "@/lib/requests";
 import { useRouter } from "next/navigation";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
@@ -31,7 +38,9 @@ export default function HospitalPage({
   const [form_err, set_form_err] = useState<string | null>(null);
   const [loading, set_loading] = useState<boolean>(true);
   const [modal, set_modal] = useState<boolean>(false);
+  const [csv_modal, set_csv_modal] = useState<boolean>(false);
   const [laudos_data, set_laudos_data] = useState<LD_info[]>([]);
+  const [csv_data, set_csv_data] = useState<CSV_info[]>([]);
   const [hp_data, set_hp_data] = useState<HP_info>({
     cnes: "",
     name: "",
@@ -93,6 +102,41 @@ export default function HospitalPage({
       });
   }
 
+  function submit_new_csv_request(data: { start: string; end: string }) {
+    const mk_info: MK_CSV_info = {
+      start: data.start.replace("\/", "-"),
+      end: data.end.replace("\/", "-"),
+      cnes: hp_data.cnes.toString(),
+      estado: hp_data.estado,
+    };
+
+    make_csv_request(mk_info)
+      .then(() => {
+        set_form_err(null);
+        set_csv_modal(false);
+        router.refresh();
+      })
+      .catch((err: AxiosError) => {
+        console.log(err, "\n");
+        const response = err.response;
+
+        if (
+          response &&
+          response.data &&
+          typeof response.data == "object" &&
+          "message" in response.data
+        ) {
+          set_err(`Erro ao criar csv: ${response.data.message}`);
+          return;
+        }
+
+        set_err(`Erro ao criar laudo:`);
+      })
+      .catch(() => {
+        set_err(`Erro ao criar laudo:`);
+      });
+  }
+
   function remove_hospital() {
     remove_hospital_request(hp_data.cnes)
       .then(() => {
@@ -108,7 +152,6 @@ export default function HospitalPage({
   }
 
   useEffect(() => {
-    console.log("batata");
     params.then(({ cnes }) => {
       get_single_hospital(cnes)
         .then((hospital_data) => {
@@ -124,6 +167,17 @@ export default function HospitalPage({
             `Ocorreu um erro ao carregar as informações relativas ao hospital ${cnes}: ${err.message}`,
           );
           return;
+        });
+
+      get_all_hospital_csvs(cnes)
+        .then((csvs) => {
+          console.log(csvs);
+          set_csv_data(csvs);
+        })
+        .catch((err) => {
+          set_err(
+            `Erro ao carregar CSVs relativas ao hospital ${cnes}: ${err.message} `,
+          );
         });
 
       get_laudos(cnes)
@@ -142,6 +196,8 @@ export default function HospitalPage({
     set_hp_data,
     set_loading,
     set_laudos_data,
+    set_csv_data,
+    set_csv_modal,
     params,
     set_modal,
     set_form_err,
@@ -308,6 +364,53 @@ export default function HospitalPage({
           </Form>
         </Formik>
       </Modal>
+      <Modal state={csv_modal}>
+        <Formik
+          onSubmit={submit_new_csv_request}
+          initialValues={{
+            start: "",
+            end: "",
+          }}
+        >
+          <Form className="self-center min-w-80 w-fit bg-white flex flex-col p-4 gap-8 rounded-lg">
+            <h2 className="text-3xl font-bold">Novo Laudo:</h2>
+            <p className="text-red-500 font-bold">{form_err}</p>
+
+            <div className="flex flex-col">
+              <label htmlFor="data_inicio">Data de início:</label>
+              <Field
+                name="start"
+                className="bg-gray-300 h-8 rounded p-2"
+                placeholder="MM/AAAA"
+              />
+            </div>
+
+            <div className="flex flex-col">
+              <label htmlFor="data_fim">Data de fim:</label>
+              <Field
+                name="end"
+                className="bg-gray-300 h-8 rounded p-2"
+                placeholder="MM/AAAA"
+              />
+            </div>
+
+            <div className="flex justify gap-8">
+              <button
+                type="submit"
+                className="p-3 rounded-lg font-bold bg-blue-400"
+              >
+                enviar
+              </button>
+              <button
+                className="p-3 rounded-lg font-bold text-white bg-red-500"
+                onClick={() => set_csv_modal(false)}
+              >
+                cancelar
+              </button>
+            </div>
+          </Form>
+        </Formik>
+      </Modal>
       <header className="h-20 bg-blue-500 flex justify-between p-3">
         <Image
           src="/logo.svg"
@@ -352,9 +455,21 @@ export default function HospitalPage({
           remover hospital
         </button>
         <div className="border" />
+        <h2 className="text-2xl font-bold">CSVS COMPLETOS:</h2>
         <div className="flex flex-wrap gap-4">
           <button
-            className="h-60 aspect-square border shadow-xl/20 border-blue-500 rounded-lg p-3 text-9xl font-bold"
+            className="h-40 aspect-square border shadow-xl/20 border-green-400 rounded-lg p-3 text-9xl font-bold text-green-500"
+            onClick={() => set_csv_modal(true)}
+          >
+            +
+          </button>
+          {csv_data.map((laudo) => make_csv_card(laudo, router, set_err))}
+        </div>
+        <div className="border" />
+        <h2 className="text-2xl font-bold">LAUDOS:</h2>
+        <div className="flex flex-wrap gap-4">
+          <button
+            className="h-60 aspect-square border shadow-xl/20 border-blue-500 rounded-lg p-3 text-9xl font-bold text-blue-400"
             onClick={() => set_modal(true)}
           >
             +
@@ -427,6 +542,70 @@ function make_laudo_card(
           className="w-fit p-1 rounded-lg aspect-square text-center hover:bg-gray-400"
           onClick={() => {
             delete_laudo(laudo.id);
+          }}
+        >
+          ❌
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function make_csv_card(
+  csv: CSV_info,
+  router: AppRouterInstance,
+  set_err: Dispatch<SetStateAction<string | null>>,
+) {
+  function delete_csv(id: number) {
+    delete_csv_request(id)
+      .then(() => {
+        router.refresh();
+      })
+      .catch(() => {
+        set_err("Erro ao deletar laudo");
+      });
+  }
+
+  return (
+    <div
+      key={csv.id}
+      className="h-40 aspect-square flex flex-col justify-between border shadow-xl/20 border-blue-500 rounded-lg p-3"
+    >
+      <div>
+        <h2 className="text-lg overflow-y-scroll font-bold max-h-16">
+          {csv.cnes}
+        </h2>
+        <p className="overflow-ellipsis">de: {csv.start}</p>
+        <p className="overflow-ellipsis">até: {csv.end}</p>
+        <div className="flex">
+          <p>estado: </p>
+          {csv.is_running ? (
+            <p className="text-yellow-400">processando</p>
+          ) : (
+            <p className="text-green-400">concluído</p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex justify-between">
+        <div className="flex gap-2">
+          <a
+            href={full_SIA_download_url(csv.id)}
+            className="bg-green-500 text-white p-1 rounded-lg font-bold hover:bg-green-600"
+          >
+            SIA
+          </a>
+          <a
+            href={full_SIH_download_url(csv.id)}
+            className="bg-green-500 text-white p-1 rounded-lg font-bold hover:bg-green-600"
+          >
+            SIH
+          </a>
+        </div>
+        <button
+          className="w-fit p-1 rounded-lg aspect-square text-center hover:bg-gray-400"
+          onClick={() => {
+            delete_csv(csv.id);
           }}
         >
           ❌
